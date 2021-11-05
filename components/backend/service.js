@@ -1,9 +1,32 @@
 import VIForegroundService from '@voximplant/react-native-foreground-service';
+import PushNotificationIOS from '@react-native-community/push-notification-ios';
+import PushNotification from 'react-native-push-notification';
 import emitter from 'tiny-emitter/instance';
 
 import Database from './database';
-import {testClient, testClient1} from './mqtt';
+import {testClient, testClient1,mqttClient, mqttClient1} from './mqtt';
 import {SoilMonitor, AirMonitor, LightMonitor} from './monitor';
+
+PushNotification.createChannel({
+  channelId: '12', // (required)
+  channelName: 'Group12', // (required)
+});
+//Notification setting
+PushNotification.configure({
+  onRegister: function (token) {},
+
+  onNotification: function (notification) {
+    notification.finish(PushNotificationIOS.FetchResult.NoData);
+  },
+
+  permissions: {
+    alert: true,
+    badge: true,
+    sound: true,
+  },
+  popInitialNotification: true,
+  requestPermissions: true,
+});
 
 class ForegroundService {
   running = false;
@@ -27,8 +50,10 @@ class ForegroundService {
           break;
       }
     });
-    this.client = testClient;
-    this.client1 = testClient1;
+    //this.client = testClient;
+    //this.client1 = testClient1;
+    this.client = mqttClient;
+    this.client1 = mqttClient1;
     this.soilMonitor = new SoilMonitor(
       this.client,
       this.client1,
@@ -45,6 +70,12 @@ class ForegroundService {
       createFromLocation: '~test4.db',
     });
   }
+
+  getApiKeys = async () => {
+    let response = await fetch('http://dadn.esp32thanhdanh.link');
+    let json = await response.json();
+    return json.key.split(':');
+  };
 
   start = async () => {
     if (this.running) {
@@ -67,6 +98,9 @@ class ForegroundService {
     };
     try {
       await VIForegroundService.startService(notificationConfig);
+      //let apiKeys = await this.getApiKeys();
+      this.client.options.password = apiKeys[0]; //change apiKeys into key string
+      this.client1.options.password = apiKeys[1];
       this.client.start();
       this.client1.start();
       await this.database.init();
@@ -77,17 +111,7 @@ class ForegroundService {
     }
   };
 
-  startMonitors = async userEmail => {
-    // let plant = await this.database.getUserSettings(userEmail);
-    // this.database.fetchData();
-    // this.plantData.soilHumid = this.database.soil[
-    //   this.database.soil.length - 1
-    // ];
-    // this.plantData.airHumid = this.database.air[this.database.air.length - 1];
-    // this.plantData.temp = this.database.temperature[
-    //   this.database.temperature.length - 1
-    // ];
-    // this.plantData.light = this.database.light[this.database.light.length - 1];
+  startMonitors = userEmail => {
     this.soilMonitor.start();
     this.airMonitor.start();
     this.lightMonitor.start();

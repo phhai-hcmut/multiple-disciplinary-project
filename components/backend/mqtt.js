@@ -1,5 +1,4 @@
 import * as Mqtt from 'react-native-native-mqtt';
-import PushNotificationIOS from '@react-native-community/push-notification-ios';
 import PushNotification from 'react-native-push-notification';
 import {Buffer} from 'buffer';
 import emitter from 'tiny-emitter/instance';
@@ -13,6 +12,7 @@ class MqttClient {
     this.#client = new Mqtt.Client('tcp://io.adafruit.com:1883');
     this.#client.on(Mqtt.Event.Connect, () => {
       console.log('MQTT Connect');
+      this.mqttPush('MQTT','Connected');
       this.#client.subscribe(
         this.subscribedTopics,
         Array(this.subscribedTopics.length).fill(1),
@@ -25,11 +25,28 @@ class MqttClient {
     });
 
     this.#client.on(Mqtt.Event.Disconnect, cause => {
+      this.mqttPush('MQTT','Disconnected');
       console.log('MQTT Disconnect:', cause);
     });
     this.client = this.#client;
   }
+  mqttPush = (manager, message) => {
+    PushNotification.localNotification({
+      /* Android Only Properties */
+      channelId: '12',
+      showWhen: true, // (optional) default: true
+      autoCancel: false, // (optional) default: true
+      ongoing: true,
+      vibrate: true, // (optional) default: true
+      vibration: 300, // vibration length in milliseconds, ignored if vibrate=false, default: 1000
+      //ignoreInForeground: true, // (optional) if true, the notification will not be visible when the app is in the foreground (useful for parity with how iOS notifications appear). should be used in combine with `com.dieam.reactnativepushnotification.notification_foreground` setting
+      timeoutAfter: 5000, // (optional) Specifies a duration in milliseconds after which this notification should be canceled, if it is not already canceled, default: null
+      invokeApp: true, // (optional) This enable click on actions to bring back the application to foreground or stay in background, default: true
 
+      title: manager, // (optional)
+      message: message, // (required)
+    });
+  };
   onMessageArrived = (topic, message) => {
     console.log('MQTT Message:', topic, message.toString());
     const data = JSON.parse(message);
@@ -39,47 +56,19 @@ class MqttClient {
         let temp, humid;
         [temp, humid] = data.data.split('-');
         this.temp = parseInt(temp);
-        emitter.emit('sensorDataReceived', 'temperature', this.temp);
         this.airHumid = parseInt(humid);
         emitter.emit('sensorDataReceived', 'air', this.airHumid);
+        emitter.emit('sensorDataReceived', 'temperature', this.temp);
         break;
       case 9:
-        this.soilHumid = Math.round(parseInt(data.data) / 1023 * 100);
+        this.soilHumid = Math.round((parseInt(data.data) / 1023) * 100);//parseInt(data.data);
         emitter.emit('sensorDataReceived', 'soil', this.soilHumid);
         break;
       case 13:
-        this.light = Math.round(parseInt(data.data) / 1023 * 100);
+        this.light = Math.round((parseInt(data.data) / 1023) * 100);
         emitter.emit('sensorDataReceived', 'light', this.light);
         break;
     }
-
-    PushNotification.createChannel(
-      {
-        channelId: '12', // (required)
-        channelName: 'Group12', // (required)
-      },
-      created => console.log(`createChannel returned '${created}'`), // (optional) callback returns whether the channel was created, false means it already existed.
-    );
-    //Notification setting
-    PushNotification.configure({
-      onRegister: function (token) {
-        console.log('TOKEN:', token);
-      },
-
-      onNotification: function (notification) {
-        console.log('NOTIFICATION:', notification);
-
-        notification.finish(PushNotificationIOS.FetchResult.NoData);
-      },
-
-      permissions: {
-        alert: true,
-        badge: true,
-        sound: true,
-      },
-      popInitialNotification: true,
-      requestPermissions: true,
-    });
   };
 
   get connected() {
@@ -126,8 +115,6 @@ const testClient = new MqttClient(
   [
     'Group12/feeds/bk-iot-temp-humid',
     'Group12/feeds/bk-iot-soil',
-    'Group12/feeds/bk-iot-drv',
-    'Group12/feeds/test2',
   ],
 );
 
@@ -139,34 +126,31 @@ const testClient1 = new MqttClient(
   [
     'Group121/feeds/bk-iot-light',
     'Group121/feeds/bk-iot-relay',
-    'Group121/feeds/test',
+    'Group121/feeds/bk-iot-servo',
   ],
 );
 
 const mqttClient = new MqttClient(
   {
     username: 'CSE_BBC',
-    password: 'aio_KXfp47zegx3CthMAEj6pB0ZeKoEm',
+    password: '',
   },
   [
     'CSE_BBC/feeds/bk-iot-temp-humid',
     'CSE_BBC/feeds/bk-iot-soil',
-    'CSE_BBC/feeds/bk-iot-drv',
   ],
 );
 
 const mqttClient1 = new MqttClient(
   {
     username: 'CSE_BBC1',
-    password: 'aio_yqUQ00Ryi2liePf8ElzL3yq3dNij',
+    password: '',
   },
-  ['CSE_BBC1/feeds/bk-iot-light', 'CSE_BBC1/feeds/bk-iot-relay'],
+  [
+    'CSE_BBC1/feeds/bk-iot-light', 
+    'CSE_BBC1/feeds/bk-iot-relay',
+    'CSE_BBC1/feeds/bk-iot-servo',
+  ],
 );
 
-export {
-  MqttClient,
-  testClient,
-  testClient1,
-  mqttClient,
-  mqttClient1,
-};
+export {MqttClient, testClient, testClient1, mqttClient, mqttClient1};

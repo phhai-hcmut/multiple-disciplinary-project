@@ -13,10 +13,6 @@ class Monitor {
   }
 
   start = (client, data) => {
-    // this.client = client;
-    // this.data = data;
-    // this.running = true;
-    // this.checkCondition();
     this.checkCondition();
     emitter.on('sensorDataReceived', this.checkCondition);
   };
@@ -25,7 +21,7 @@ class Monitor {
     // this.running = false;
     emitter.off('sensorDataReceived', this.checkCondition);
   };
-  notiPush = (manager,message) => {
+  notiPush = (manager, message) => {
     PushNotification.localNotification({
       /* Android Only Properties */
       channelId: '12',
@@ -45,18 +41,14 @@ class Monitor {
 }
 
 class SoilMonitor extends Monitor {
-  // soilIrrigation = false; // To know if the soil irrigation machine is activated
-
   checkCondition = () => {
-    console.log('Check condition', this.data.soilHumid, this.data.temp, this.data.soilIrrigation);
-
     if (
       this.data.soilHumid <= this.data.minSoilHumid &&
       this.data.temp >= this.data.maxTemp &&
       !this.data.soilIrrigation
     ) {
       this.activatePump();
-      this.notiPush('Soil Manager','Your soil irrigation is On');
+      this.notiPush('Soil Manager', 'Your soil irrigation is On');
     }
     if (
       this.data.soilHumid >= this.data.maxSoilHumid &&
@@ -64,46 +56,34 @@ class SoilMonitor extends Monitor {
       this.data.soilIrrigation
     ) {
       this.deactivatePump();
-      this.notiPush('Soil Manager','Soil Irrigation Off');
+      this.notiPush('Soil Manager', 'Soil Irrigation Off');
     }
-
-    // if (this.running) {
-    //   setTimeout(this.checkCondition, this.interval);
-    // }
   };
 
   activatePump() {
-    //? re-setting conditions
     this.interval = 1000;
     this.data.soilIrrigation = true;
 
-    //? Publish data to relay
-    //let data = {id: '11', name: 'RELAY', data: '1', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-relay', data);
-    let data = {id: '11', name: 'RELAY_SOIL', data: '1', unit: ''};
-    this.client1.publish('Group121/feeds/bk-iot-relay', data);
+    let data = {id: "11", name: "RELAY", data: "1", unit: ""};
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-relay', data);
+    //let data = {id: '11', name: 'RELAY_SOIL', data: '1', unit: ''};
+    //this.client1.publish('Group121/feeds/bk-iot-relay', data);
     emitter.emit('pumpActivated', true);
   }
 
   deactivatePump() {
-    //? re-setting conditions
     this.interval = 5000;
     this.data.soilIrrigation = false;
 
-    //? Publish data to relay
-    //let data = {id: '11', name: 'RELAY', data: '0', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-relay', data);
-    let data = {id: '11', name: 'RELAY_SOIL', data: '0', unit: ''};
-    this.client1.publish('Group121/feeds/bk-iot-relay', data);
+    let data = {id: "11", name: "RELAY", data: "0", unit: ""};
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-relay', data);
+    // let data = {id: '11', name: 'RELAY_SOIL', data: '0', unit: ''};
+    // this.client1.publish('Group121/feeds/bk-iot-relay', data);
     emitter.emit('pumpActivated', false);
   }
 }
 
 class AirMonitor extends Monitor {
-  // mistSpray = false; // To know if the mist-spray machine is activated
-
-
-
   checkCondition = () => {
     if (
       this.data.airHumid <= this.data.minAirHumid &&
@@ -111,7 +91,7 @@ class AirMonitor extends Monitor {
       !this.data.mistSpray
     ) {
       this.activateSpray();
-      this.notiPush('Atmosphere Manager','Your sprinkler is on');
+      this.notiPush('Atmosphere Manager', 'Your sprinkler is on');
     }
     if (
       this.data.airHumid >= this.data.maxAirHumid &&
@@ -119,44 +99,34 @@ class AirMonitor extends Monitor {
       this.data.mistSpray
     ) {
       this.deactivateSpray();
-      this.notiPush('Atmosphere Manager','Sprinkler is Off');
+      this.notiPush('Atmosphere Manager', 'Sprinkler is Off');
     }
-
-    // if (this.running) {
-    //   setTimeout(this.checkCondition, this.interval);
-    // }
   };
 
   activateSpray() {
-    //? re-setting conditions
     this.data.mistSpray = true;
     this.interval = 1000;
 
-    // ? Publish data to the relay
-    //let data = {id: '11', name: 'RELAY', data: '1', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-relay', data);
-    let data = {id: '11', name: 'RELAY_AIR', data: '1', unit: ''};
-    this.client1.publish('Group121/feeds/bk-iot-relay', data);
+    let data = {id: "11", name: "RELAY", data: "1", unit: ""};
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-relay', data);
+    // let data = {id: '11', name: 'RELAY_AIR', data: '1', unit: ''};
+    // this.client1.publish('Group121/feeds/bk-iot-relay', data);
     emitter.emit('sprayActivated', true);
   }
 
   deactivateSpray() {
-    //? re-setting conditions
     this.data.mistSpray = false;
     this.interval = 5000;
 
-    // ? Publish data to the relay
-    //let data = {id: '11', name: 'RELAY', data: '0', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-relay', data);
-    let data = {id: '11', name: 'RELAY_AIR', data: '0', unit: ''};
-    this.client1.publish('Group121/feeds/bk-iot-relay', data);
+    let data = {id: "11", name: "RELAY", data: "0", unit: ""};
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-relay', data);
+    // let data = {id: '11', name: 'RELAY_AIR', data: '0', unit: ''};
+    // this.client1.publish('Group121/feeds/bk-iot-relay', data);
     emitter.emit('sprayActivated', false);
   }
 }
 
 class LightMonitor extends Monitor {
-  // net = false;
-
   checkCondition = () => {
     if (
       this.data.light >= 70 &&
@@ -164,42 +134,33 @@ class LightMonitor extends Monitor {
       !this.data.net
     ) {
       this.activateNet();
-      this.notiPush('Lighting Manager','Initiate Shader');
+      this.notiPush('Lighting Manager', 'Initiate Shader');
     }
-    if (
-      this.data.light < 50 &&
-      this.data.net
-    ) {
+    if (this.data.light < 50 && this.data.net) {
       this.deactivateNet();
-      this.notiPush('Lighting Manager','Deactivate Shader');
+      this.notiPush('Lighting Manager', 'Deactivate Shader');
     }
-
-    // if (this.running) {
-    //   setTimeout(this.checkCondition, this.interval);
-    // }
   };
 
   activateNet() {
-    //? re-setting conditions
     this.data.net = true;
     this.interval = 1000;
 
-    //? Publish data into drv
-    let data = {id: '10', name: 'DRV_PWM', data: '255', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-drv', data);
-    this.client.publish('Group12/feeds/bk-iot-drv', data);
+    let data = {id: "17", name: "SERVO", data: "180", unit: "degree"};
+
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-servo', data);
+    // this.client1.publish('Group121/feeds/bk-iot-servo', data);
     emitter.emit('netActivated', true);
   }
 
   deactivateNet() {
-    //? re-setting conditions
     this.data.net = false;
     this.interval = 5000;
 
-    //? Publish data into drv
-    let data = {id: '10', name: 'DRV_PWM', data: '-255', unit: ''};
-    //this.client.publish('CSE_BBC1/feeds/bk-iot-drv', data);
-    this.client.publish('Group12/feeds/bk-iot-drv', data);
+    let data = {id: '17', name: 'SERVO', data: '0', unit: 'degree'};
+
+    this.client1.publish('CSE_BBC1/feeds/bk-iot-servo', data);
+    // this.client1.publish('Group121/feeds/bk-iot-servo', data);
     emitter.emit('netActivated', false);
   }
 }
